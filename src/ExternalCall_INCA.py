@@ -1,3 +1,7 @@
+'''
+Author: Chenrui Huang <chenrui_huang@patac.com.cn>
+'''
+
 import multiprocessing
 import win32com
 from win32com.client import Dispatch, constants

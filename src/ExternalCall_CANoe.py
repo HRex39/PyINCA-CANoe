@@ -5,6 +5,7 @@ import os
 import time
 from win32com.client import *
 from win32com.client.connect import *
+from win32com.client import Dispatch, constants
 
 class CANoe:
     def __init__(self):
@@ -54,10 +55,11 @@ class CANoe:
         else:
             pass
     
-    def replay_Block(self,filelists):
+    def set_ReplayBlock_File(self,file):
         ReplayBlocks=self.application.Bus.ReplayCollection
         #print(ReplayBlocks.Count)
         
+        # if false,delete false cache in C:\Users\<my username>\AppData\Local\Temp\gen_py 
         ReplayBlock1=ReplayBlocks.Item(1)
         ReplayBlock11=CastTo(ReplayBlock1,"IReplayBlock2")
         
@@ -70,17 +72,7 @@ class CANoe:
         ReplayBlock4=ReplayBlocks.Item(4)
         ReplayBlock44=CastTo(ReplayBlock4,"IReplayBlock2")
         
-        for file in filelists:
-            a=1
-            ReplayBlock11.Path=file
-            ReplayBlock22.Path=file
-            ReplayBlock33.Path=file
-            ReplayBlock44.Path=file
-            print(ReplayBlock11.Path)
-            print(ReplayBlock22.Path)
-            print(ReplayBlock33.Path)
-            print(ReplayBlock44.Path)
-            time.sleep(1)
-
-app = CANoe()
-app.open_cfg(r"E:\CANOE_Script\ACP3_HIL_Feedback\ACP3_HIL_Feedback.cfg") #导入某个CANoe config
+        ReplayBlock11.Path=file
+        ReplayBlock22.Path=file
+        ReplayBlock33.Path=file
+        ReplayBlock44.Path=file

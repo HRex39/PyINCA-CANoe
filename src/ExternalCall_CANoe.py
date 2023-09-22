@@ -69,10 +69,7 @@ class CANoe:
         ReplayBlock3=ReplayBlocks.Item(3)
         ReplayBlock33=CastTo(ReplayBlock3,"IReplayBlock2")
         
-        ReplayBlock4=ReplayBlocks.Item(4)
-        ReplayBlock44=CastTo(ReplayBlock4,"IReplayBlock2")
         
         ReplayBlock11.Path=file
         ReplayBlock22.Path=file
         ReplayBlock33.Path=file
-        ReplayBlock44.Path=file

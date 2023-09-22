@@ -9,7 +9,8 @@ if __name__ == '__main__':
     # Get Data Folder and Lists 
     root=tk.Tk()
     root.withdraw()
-    Folderpath=filedialog.askdirectory()
+    Start_File = filedialog.askopenfilename()
+    Folderpath = filedialog.askdirectory()
     #File = filedialog.askopenfilename()
     FileLists=os.listdir(Folderpath)
     result_path=Folderpath+"/Result"
@@ -25,13 +26,29 @@ if __name__ == '__main__':
     INCA.get_openExp()
     INCA.set_record_path(result_path)
     INCA.start_measurement()
+    
+    #Start_File_load
+    log_data = BLFReader(Start_File)
+    file_start = log_data.start_timestamp
+    file_end = log_data.stop_timestamp
+    t=int(float(file_end)-float(file_start)) 
+    print(Start_File+" will record about "+str(t)+"s")
+    print("Strat File load, please wait...")
+    app_Caone.set_ReplayBlock_File(Start_File)
+    INCA.start_measurement()
+    app_Caone.start_Measurement()
+    time.sleep(t)
+    app_Caone.stop_Measurement()  
+    print("Strat File done...")
 
+    # Batch File Load
     for File in FileLists:
         Record_Flag=1
         format=File.split(".")[-1]
         # get file time
         if format=='asc':
-            framefile = read_csv(Folderpath+"/"+File,skiprows=4,encoding="gbk",engine='python',sep=' ',delimiter=None, index_col=False,header=None,skipinitialspace=True)
+            framefile = read_csv(Folderpath+"/"+File,skiprows=4,encoding="gbk",
+                                 engine='python',sep=' ',delimiter=None, index_col=False,header=None,skipinitialspace=True)
             file_time=framefile.values[-3][0]
             t=int(float(file_time))
         elif format=='blf':
@@ -53,7 +70,7 @@ if __name__ == '__main__':
             #time.sleep(5) # No need to wait Canoe start, it will stay in this line until Canoe start measure
             INCA.start_record()
             print(File+" is replay and recording...")
-            time.sleep(t-3) #wait data replay finish
+            time.sleep(t) #wait data replay finish
             INCA.stop_record()
             app_Caone.stop_Measurement()        
             print(File+" is done and save...")

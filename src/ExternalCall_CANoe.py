@@ -60,6 +60,13 @@ class CANoe:
         #print(ReplayBlocks.Count)
         
         # if false,delete false cache in C:\Users\<my username>\AppData\Local\Temp\gen_py 
+        n=ReplayBlocks.Count
+        for i in range(1,n+1):
+            ReplayBlock_i=ReplayBlocks.Item(i)
+            ReplayBlock_CastTo=CastTo(ReplayBlock_i,"IReplayBlock2")
+            ReplayBlock_CastTo.Path=file
+        
+        '''    
         ReplayBlock1=ReplayBlocks.Item(1)
         ReplayBlock11=CastTo(ReplayBlock1,"IReplayBlock2")
         
@@ -73,3 +80,4 @@ class CANoe:
         ReplayBlock11.Path=file
         ReplayBlock22.Path=file
         ReplayBlock33.Path=file
+        '''

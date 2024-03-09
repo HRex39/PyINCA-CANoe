@@ -1,0 +1,79 @@
+/*@!Encoding:936*/
+// Checksum = ( Byte[0] + Byte[1] + Byte[2] + Byte[3] + Byte[4] + Byte[5] + ((Byte[6] & 0xF8) >> 3) + (CAN_ID / 8)  )
+includes {
+  
+}
+
+variables {
+  msTimer Tmr10ms;
+  int checksum = 0;
+  
+  pdu HiPrcsnInrtlDatGen_PDU HiPrcsnInrtlDatGen_MSG_0x49;
+  pdu HiPrcsnInrtlDatPri_PDU HiPrcsnInrtlDatPri_MSG_0x4A;
+  pdu HiPrcsnInrtlDatSec_PDU HiPrcsnInrtlDatSec_MSG_0x4B;
+  pdu IMU_HP_AS_PRIVATE_CAN_PDU01 IMU_HP_AS_PRIVATE_CAN_MSG01_0x29;
+  pdu IMU_HP_AS_PRIVATE_CAN_PDU02 IMU_HP_AS_PRIVATE_CAN_MSG02_0x2A;
+  pdu IMU_HP_AS_PRIVATE_CAN_PDU03 IMU_HP_AS_PRIVATE_CAN_MSG03_0x2B;
+}
+
+int Calc_Checksum(pdu* m) {
+  int cs = 0;
+  cs = m.byte(0) + m.byte(1) + m.byte(2) + m.byte(3) + m.byte(4) + m.byte(5) + ((m.byte(6) & 0xF8) >> 3);
+  return cs;
+}
+
+
+on start {
+  setTimer(Tmr10ms, 10);
+}
+
+on PDU SrlDat46_Prtctd_PDU {
+  HiPrcsnInrtlDatGen_MSG_0x49.HPIDG_ARC = this.SD46P_ARC;
+  HiPrcsnInrtlDatGen_MSG_0x49.HPIDG_InitCmplt = 1;
+  HiPrcsnInrtlDatGen_MSG_0x49.HPIDG_LatAccelCorrSts = 2;
+  HiPrcsnInrtlDatGen_MSG_0x49.HPIDG_LngAccelCorrSts = 2;
+  HiPrcsnInrtlDatGen_MSG_0x49.HPIDG_LoVltgDtd = 0;
+  HiPrcsnInrtlDatGen_MSG_0x49.HPIDG_OrntnCalSts = 1; // Depends on Real Vehicle
+  HiPrcsnInrtlDatGen_MSG_0x49.HPIDG_PriLatAccel_Inv = this.LatAccelAuth_Inv;
+  HiPrcsnInrtlDatGen_MSG_0x49.HPIDG_PriLngAccel_Inv = this.LongAccelAuth_Inv;
+  HiPrcsnInrtlDatGen_MSG_0x49.HPIDG_PriTemp = 200; // Random Temperature
+  HiPrcsnInrtlDatGen_MSG_0x49.HPIDG_PriTemp_Inv = 0;
+  HiPrcsnInrtlDatGen_MSG_0x49.HPIDG_PriYawRate_Inv = this.YawRateAuth_Inv;
+  HiPrcsnInrtlDatGen_MSG_0x49.HPIDG_RstOcc = 0;
+  HiPrcsnInrtlDatGen_MSG_0x49.HPIDG_SecLatAccel_Inv = 0;
+  HiPrcsnInrtlDatGen_MSG_0x49.HPIDG_SecLngAccel_Inv = 0;
+  HiPrcsnInrtlDatGen_MSG_0x49.HPIDG_SecTemp = 200; // Random Temperature
+  HiPrcsnInrtlDatGen_MSG_0x49.HPIDG_SecTemp_Inv = 0;
+  HiPrcsnInrtlDatGen_MSG_0x49.HPIDG_SecYawRate_Inv = this.YawRateAuth_Inv;
+  HiPrcsnInrtlDatGen_MSG_0x49.HPIDG_StcOfstCalSts = 1;
+  HiPrcsnInrtlDatGen_MSG_0x49.HPIDG_YawRateCorrSts = 2;
+  HiPrcsnInrtlDatGen_MSG_0x49.HPIDG_CS = (Calc_Checksum(HiPrcsnInrtlDatGen_MSG_0x49) + 0x49 / 8) & 0x7FF;
+  
+  HiPrcsnInrtlDatPri_MSG_0x4A.HPIDP_ARC = this.SD46P_ARC;
+  HiPrcsnInrtlDatPri_MSG_0x4A.HPIDP_LatAccel = this.LatAccelAuth;
+  HiPrcsnInrtlDatPri_MSG_0x4A.HPIDP_LngAccel = this.LongAccelAuth;
+  HiPrcsnInrtlDatPri_MSG_0x4A.HPIDP_YawAccel = this.YawRateAuth;
+  HiPrcsnInrtlDatPri_MSG_0x4A.HPIDP_YawRate = this.YawRateAuth;
+  HiPrcsnInrtlDatPri_MSG_0x4A.HPIDP_CS = (Calc_Checksum(HiPrcsnInrtlDatPri_MSG_0x4A) + 0x4A / 8) & 0X7FF;
+  
+  HiPrcsnInrtlDatSec_MSG_0x4B.HPIDS_ARC = this.SD46P_ARC;
+  HiPrcsnInrtlDatSec_MSG_0x4B.HPIDS_LatAccel = this.LatAccelAuth;
+  HiPrcsnInrtlDatSec_MSG_0x4B.HPIDS_LngAccel = this.LongAccelAuth;
+  HiPrcsnInrtlDatSec_MSG_0x4B.HPIDS_YawAccel = this.YawRateAuth;
+  HiPrcsnInrtlDatSec_MSG_0x4B.HPIDS_YawRate = this.YawRateAuth;
+  HiPrcsnInrtlDatSec_MSG_0x4B.HPIDS_CS = (Calc_Checksum(HiPrcsnInrtlDatSec_MSG_0x4B) + 0x4B / 8) & 0x7FF;
+  
+  IMU_HP_AS_PRIVATE_CAN_MSG01_0x29.HiPrcsnIMUPartNum = 86813181; // Random Num(LRR PN)
+  IMU_HP_AS_PRIVATE_CAN_MSG02_0x2A.HiPrcsnIMUSrlNum = 86813181;
+  IMU_HP_AS_PRIVATE_CAN_MSG03_0x2B.HiPrcsnIMUPartNumDLS = 0;
+}
+
+on timer Tmr10ms {
+  triggerPDU(HiPrcsnInrtlDatGen_MSG_0x49);
+  triggerPDU(HiPrcsnInrtlDatPri_MSG_0x4A);
+  triggerPDU(HiPrcsnInrtlDatSec_MSG_0x4B);
+  triggerPDU(IMU_HP_AS_PRIVATE_CAN_MSG01_0x29);
+  triggerPDU(IMU_HP_AS_PRIVATE_CAN_MSG02_0x2A);
+  triggerPDU(IMU_HP_AS_PRIVATE_CAN_MSG03_0x2B);
+  setTimer(Tmr10ms, 10);
+}

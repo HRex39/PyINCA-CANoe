@@ -3,6 +3,8 @@ Author: Fuqiang Liu <fuqiang_liu@patac.com.cn>
 '''
 import os
 import time
+import shutil
+import win32com
 from win32com.client import *
 from win32com.client.connect import *
 from win32com.client import Dispatch, constants
@@ -55,29 +57,31 @@ class CANoe:
         else:
             pass
     
+    def Running(self):
+        if self.application.Measurement.Running:
+            return True
+        else:
+            return False
+    
     def set_ReplayBlock_File(self,file):
-        ReplayBlocks=self.application.Bus.ReplayCollection
-        #print(ReplayBlocks.Count)
-        
-        # if false,delete false cache in C:\Users\<my username>\AppData\Local\Temp\gen_py 
+        ReplayBlocks=self.application.Bus.ReplayCollection     
+        # if false,delete false cache in C:\Users\<my username>\AppData\Local\Temp\gen_py
+        # C:\Users\llliu\AppData\Local\Temp\gen_py
         n=ReplayBlocks.Count
-        for i in range(1,n+1):
-            ReplayBlock_i=ReplayBlocks.Item(i)
-            ReplayBlock_CastTo=CastTo(ReplayBlock_i,"IReplayBlock2")
-            ReplayBlock_CastTo.Path=file
+        Flag=1
+        while Flag:
+            try:
+                for i in range(1,n+1):
+                    ReplayBlock_i=ReplayBlocks.Item(i)
+                    ReplayBlock_CastTo=CastTo(ReplayBlock_i,"IReplayBlock2")
+                    ReplayBlock_CastTo.Path=file
+                Flag=0
+            except Exception:
+                genpy=win32com.__gen_path__
+                FolderLists=os.listdir(genpy)
+                print("ReplayBlock Issue")
+                for i in FolderLists:
+                    if os.path.isdir(genpy+"\\"+i):
+                        shutil.rmtree(genpy+"\\"+i)
+                        print("delete temp gen_py") 
         
-        '''    
-        ReplayBlock1=ReplayBlocks.Item(1)
-        ReplayBlock11=CastTo(ReplayBlock1,"IReplayBlock2")
-        
-        ReplayBlock2=ReplayBlocks.Item(2)
-        ReplayBlock22=CastTo(ReplayBlock2,"IReplayBlock2")
-        
-        ReplayBlock3=ReplayBlocks.Item(3)
-        ReplayBlock33=CastTo(ReplayBlock3,"IReplayBlock2")
-        
-        
-        ReplayBlock11.Path=file
-        ReplayBlock22.Path=file
-        ReplayBlock33.Path=file
-        '''

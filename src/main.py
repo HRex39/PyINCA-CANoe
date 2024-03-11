@@ -5,8 +5,11 @@ from ExternalCall_CANoe import *
 from ExternalCall_INCA import *
 import sys
 import os
+import time
 import multiprocessing
+import threading
 import pythoncom
+import ctypes
 
 class LoadPage:
     def __init__(self,master) -> None:  
@@ -18,6 +21,7 @@ class LoadPage:
         self.current_work_dir = '/'.join(current_path.split("\\")[:-1])
         
         #Variables
+        self.Thread_ID_List=[]
         self.varStartFile=tk.StringVar()
         self.Start_File=self.current_work_dir+"/Normal Start_convert.blf"
         self.varStartFile.set(self.Start_File)
@@ -27,13 +31,16 @@ class LoadPage:
         self.textButton=tk.StringVar()
         self.ReplayButton=tk.StringVar()
         self.showPath=tk.StringVar()
-        self.text.set("批量回灌的文件夹 :")
-        self.textButton.set("打开文件夹")
-        self.ReplayButton.set("回放文件夹数据")
+        self.text.set("需要回灌的文件 :")
+        self.textButton.set("打开文件")
+        self.ReplayButton.set("回放数据")
         self.showPath.set("")
         self.pattern=tk.IntVar()
-        self.pattern.set(2)
+        self.pattern.set(1)
         self.thread_Flag=True
+        # HCR Add
+        self.Inca_Flag=tk.IntVar()
+        self.Inca_Flag.set(1)
         
         #Configure
         self.root=master
@@ -59,7 +66,7 @@ class LoadPage:
         NormalStart_Label.pack(side = tk.LEFT,padx=5,pady=5)
         NormalStart_Path=tk.Label(self.row2,textvariable=self.varStartFile,bg='white',width=88,relief='groove',font="Calibri 10 bold")
         NormalStart_Path.pack(side = tk.LEFT,padx=5,pady=5)
-        NormalStart_SelectButton=tk.Button(self.row2,text='打开文件',width=9, command=self.loadStartFile)
+        NormalStart_SelectButton=tk.Button(self.row2,text='打开文件',width=9, command=self.load_StartFile)
         NormalStart_SelectButton.pack(side = tk.LEFT,pady=5)
         
         self.row3=tk.Frame(self.page1)
@@ -82,10 +89,12 @@ class LoadPage:
         self.row5.configure(background=self.bg_color)        
         tk.Button(self.row5, text='退出', command=self.exit,width=8).pack(side = tk.RIGHT,padx=4)
         tk.Button(self.row5, textvariable=self.ReplayButton, command=self.check,width=13).pack(side = tk.RIGHT,padx=10)
-        self.NormalStartButton=tk.Button(self.row5, text='加载Normal文件', command=self.Canoe_load_startNormal,width=13)
-        self.NormalStartButton.pack(side = tk.RIGHT,padx=10)
+        self.NormalStartButton=tk.Button(self.row5, text='StartNormal', command=self._startNormal,width=13)
+        self.NormalStartButton.pack(side = tk.RIGHT,padx=10)    
         self.CanoeButton=tk.Button(self.row5, text='加载Canoe配置', command=self.loadCanoe,width=13)
         self.CanoeButton.pack(side = tk.RIGHT,padx=10)
+        # HCR Add
+        tk.Checkbutton(self.row5, text="是否开启INCA?", variable=self.Inca_Flag, bg=self.bg_color, font="Calibri 10").pack(side='left',padx=100)
     
     # Different pattern to choose replay File or Files
     def changePattern(self):
@@ -100,7 +109,7 @@ class LoadPage:
             self.ReplayButton.set("回放文件夹数据")
             self.showPath.set(self.Folder_path)
         
-    def loadStartFile(self):
+    def load_StartFile(self):
         self.Start_File = filedialog.askopenfilename()
         self.varStartFile.set(self.Start_File)
     
@@ -112,7 +121,14 @@ class LoadPage:
             self.Folder_path = filedialog.askdirectory()
             self.showPath.set(self.Folder_path)
     
-    def Canoe_load_startNormal(self):
+    def _startNormal(self):
+        v1=threading.Thread(target=self.threadingTask)
+        v1.setDaemon(True)
+        v1.start()
+        self.Thread_ID_List.append(v1.ident)
+    
+    @property   
+    def startNormal(self):
         try:
             format=self.Start_File.split(".")[-1]
             if os.path.exists(self.Start_File) and (format=="blf" or format=="asc"):
@@ -124,8 +140,26 @@ class LoadPage:
         except:
             messagebox.showerror("未知错误","请先打开正确的Canoe配置")
         else:
-            self.app_Caone.set_ReplayBlock_File(self.Start_File)
-            self.app_Caone.start_Measurement()
+            self.NormalStartButton.config(state=tk.DISABLED)
+            while True:
+                t=10   
+                self.app_Caone.set_ReplayBlock_File(self.Start_File)
+                self.app_Caone.start_Measurement()
+                time.sleep(t)
+                self.app_Caone.stop_Measurement()  
+                time.sleep(1)
+       
+    def threadingTask(self):
+        p=multiprocessing.Process(target=self.startNormal)
+    
+    # raise exception to kill thread
+    def raise_exception(self):   
+        thread_id = self.Thread_ID_List[0]
+        res = ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 
+			ctypes.py_object(SystemExit)) 
+        if res > 1: 
+            ctypes.pythonapi.PyThreadState_SetAsyncExc(thread_id, 0) 
+            print('Exception raise failure')  
     
     def loadCanoe(self):
         try:
@@ -156,19 +190,21 @@ class LoadPage:
                 messagebox.showwarning(title='警告',message='请检查NormalStart文件格式及路径')
             elif not Flag_File:
                 messagebox.showwarning(title='警告',message='请检查回灌数据格式，需asc或blf格式')
+            # HCR Add
             else:
                 try:
-                    pythoncom.CoInitialize()
-                    self.inca = Inca()
-                    self.inca.get_openExp()
-                    self.inca.stop_measurement()
-                    self.app_Caone = CANoe()
-                    self.app_Caone.stop_Measurement()
+                    if self.Inca_Flag.get():
+                        pythoncom.CoInitialize()
+                        self.inca = Inca()
+                        self.inca.get_openExp()
+                        self.inca.stop_measurement()
                 except BaseException:
-                    messagebox.showwarning(title='警告',message='请检查INCA和Canoe的连接')
-                else: 
+                    messagebox.showwarning(title='警告',message='请先正确连接INCA')
+                else:
+                    if len(self.Thread_ID_List)!=0:
+                        self.raise_exception()    
                     self.page1.destroy()
-                    ProcessPage(self.root,self.Start_File,self.Replay_File,self.Folder_path,self.pattern.get())    
+                    ProcessPage(self.root,self.Start_File,self.Replay_File,self.Folder_path,self.pattern.get(),self.Inca_Flag.get())    
         
         else: # check StartFile Format and Filefolder
             Flag_StartFile=0
@@ -182,19 +218,21 @@ class LoadPage:
                 messagebox.showwarning(title='警告',message='请检查NormalStart文件格式及路径')
             elif not Flag_Folder:
                 messagebox.showwarning(title='警告',message='请检查回灌数据文件夹路径')
+            # HCR Add
             else:
                 try:
-                    pythoncom.CoInitialize()
-                    self.inca = Inca()
-                    self.inca.get_openExp()
-                    self.inca.stop_measurement()
-                    self.app_Caone = CANoe()
-                    self.app_Caone.stop_Measurement()
+                    if self.Inca_Flag.get():
+                        pythoncom.CoInitialize()
+                        self.inca = Inca()
+                        self.inca.get_openExp()
+                        self.inca.stop_measurement()
                 except BaseException:
-                    messagebox.showwarning(title='警告',message='请检查INCA和Canoe的连接')
+                    messagebox.showwarning(title='警告',message='请先正确连接INCA')
                 else:
+                    if len(self.Thread_ID_List)!=0:
+                        self.raise_exception()  
                     self.page1.destroy()            
-                    ProcessPage(self.root,self.Start_File,self.Replay_File,self.Folder_path,self.pattern.get())
+                    ProcessPage(self.root,self.Start_File,self.Replay_File,self.Folder_path,self.pattern.get(),self.Inca_Flag.get())
           
     def exit(self):
         answer=tk.messagebox.askokcancel('请选择','确认退出回灌程序吗？')

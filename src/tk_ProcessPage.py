@@ -11,14 +11,15 @@ import threading
 import pythoncom
 
 class ProcessPage:
-    def __init__(self,master:tk.Tk,Start_File,Replay_File,Folderpath,pattern) -> None:
+    def __init__(self,master:tk.Tk,Start_File,Replay_File,Folderpath,pattern,INCA_Flag) -> None:
         self.root=master
         self.root.title("台架自动化回灌录制")
         self.root.geometry("900x620")
         self.Start_File=Start_File
         self.Replay_File=Replay_File
         self.Folderpath=Folderpath
-        self.pattern=pattern  
+        self.pattern=pattern
+        self.INCA_Flag=INCA_Flag
         
         self.ProcessNum=0
         self.AlreadyProNum=tk.IntVar()
@@ -124,6 +125,7 @@ class ProcessPage:
           
         self._Start()
     
+    #开多线程计时
     def _showProgress(self,t):
         p=threading.Thread(target=self.showProgress,args=(t,)) 
         p.setDaemon(True)  
@@ -180,12 +182,13 @@ class ProcessPage:
                 return
         
         #INCA init
-        self.INCA=Inca()
-        self.INCA.get_openExp()
-        self.INCA.stop_record()
-        self.INCA.stop_measurement()
-        self.INCA.set_record_path(self.result_path)
-        self.INCA.start_measurement()
+        if self.INCA_Flag:
+            self.INCA=Inca()
+            self.INCA.get_openExp()
+            self.INCA.stop_record()
+            self.INCA.stop_measurement()
+            self.INCA.set_record_path(self.result_path)
+            self.INCA.start_measurement()
         
         if self.pattern==2:  
             # Batch File Load
@@ -210,7 +213,8 @@ class ProcessPage:
                 self.list_box2.see(tk.END)                   
                 # set file
                 self.app_Caone.set_ReplayBlock_File(self.Folderpath+"/"+File)
-                self.INCA.set_record_filename(File)     
+                if self.INCA_Flag:
+                    self.INCA.set_record_filename(File)     
                 # start 
                 self.app_Caone.start_Measurement()
                 retry=0
@@ -221,8 +225,9 @@ class ProcessPage:
                     time.sleep(1)
                     if retry>5:
                         messagebox.showwarning(title='警告',message='Canoe无法启动')
-                        return           
-                self.INCA.start_record()
+                        return      
+                if self.INCA_Flag:     
+                    self.INCA.start_record()
                 if t<30:
                     self._showProgress(t)
                 else:
@@ -230,7 +235,8 @@ class ProcessPage:
                 self.list_box2.insert("end",File+" 回放并记录中...")
                 self.list_box2.see(tk.END) 
                 time.sleep(t) #wait data replay finish
-                self.INCA.stop_record()
+                if self.INCA_Flag:
+                    self.INCA.stop_record()
                 self.app_Caone.stop_Measurement()  
                 retry=0
                 while self.app_Caone.Running():
@@ -285,10 +291,12 @@ class ProcessPage:
             self.list_box2.see(tk.END)                   
             # set file
             self.app_Caone.set_ReplayBlock_File(self.Replay_File)
-            self.INCA.set_record_filename(self.Replay_File)     
+            if self.INCA_Flag:
+                self.INCA.set_record_filename(self.Replay_File)     
             # start 
-            self.app_Caone.start_Measurement()           
-            self.INCA.start_record()
+            self.app_Caone.start_Measurement()   
+            if self.INCA_Flag:        
+                self.INCA.start_record()
             if t<30:
                 self._showProgress(t)
             else:
@@ -296,7 +304,8 @@ class ProcessPage:
             self.list_box2.insert("end",self.Replay_File+"回放并记录中...")
             self.list_box2.see(tk.END) 
             time.sleep(t) #wait data replay finish
-            self.INCA.stop_record()
+            if self.INCA_Flag:
+                self.INCA.stop_record()
             self.app_Caone.stop_Measurement()  
             
             self.ProcessNum+=1

@@ -4,20 +4,17 @@
 ## Dependence
 ### Prerequisite
 ```
-pip install pywin32 
+pip install pywin32 python-can
 ```
-### Application
+### Application & Hardware
 ```
-INCA 7.3
+INCA (Option)
 Python3
-```
-### HW
-```
 PC
 CANoe
 ```
 
 ## Usage
 ```
-python3 main.py
+$PyINCA-CANoe\src> python main.py
 ```

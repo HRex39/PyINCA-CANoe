@@ -4,7 +4,7 @@
 ## Dependence
 ### Prerequisite
 ```
-pip install pywin32 python-can
+pip install pywin32 python-can pandas
 ```
 ### Application & Hardware
 ```

@@ -40,7 +40,7 @@ class LoadPage:
         self.thread_Flag=True
         # HCR Add
         self.Inca_Flag=tk.IntVar()
-        self.Inca_Flag.set(1)
+        self.Inca_Flag.set(0) # Default INCA Record False
         
         #Configure
         self.root=master

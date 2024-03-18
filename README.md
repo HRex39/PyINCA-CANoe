@@ -18,3 +18,8 @@ CANoe
 ```
 $PyINCA-CANoe\src> python main.py
 ```
+
+## Tips
+```
+# if Com.Canoe() false,delete false cache in C:\Users\<my username>\AppData\Local\Temp\gen_py
+```
